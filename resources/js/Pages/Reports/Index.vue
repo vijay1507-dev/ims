@@ -115,7 +115,7 @@
                     <!-- Standard Sub Tabs -->
                     <div class="flex space-x-2 bg-gray-100 p-1.5 rounded-lg w-fit mb-4 flex-wrap gap-y-1">
                         <button
-                            v-for="subTab in ['customers', 'sales', 'payments', 'subscriptions', 'top_paid']"
+                            v-for="subTab in ['customers', 'sales', 'payments', 'subscriptions', 'renewals', 'top_paid']"
                             :key="subTab"
                             @click="activeStandardTab = subTab"
                             :class="[
@@ -125,7 +125,7 @@
                                 'px-4 py-2 text-sm rounded-md capitalize transition-all duration-200 cursor-pointer font-semibold'
                             ]"
                         >
-                            {{ subTab === 'customers' ? 'Customers Joined' : (subTab === 'sales' ? 'Total Sales' : (subTab === 'payments' ? 'Payments' : (subTab === 'subscriptions' ? 'Subscriptions' : 'Top 5 Paid'))) }}
+                            {{ subTab === 'customers' ? 'Customers Joined' : (subTab === 'sales' ? 'Total Sales' : (subTab === 'payments' ? 'Payments' : (subTab === 'subscriptions' ? 'Subscriptions' : (subTab === 'renewals' ? 'Renewals' : 'Top 5 Paid')))) }}
                         </button>
                     </div>
 
@@ -242,6 +242,7 @@
                                      <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
                                          <h3 class="font-bold text-gray-900 text-base">Collections</h3>
                                          <select v-model="selectedYearReceivedPayments" class="rounded-lg border-gray-300 text-xs font-medium text-gray-700 shadow-2xs focus:border-indigo-500 focus:ring-indigo-500 bg-white px-2.5 py-1 cursor-pointer">
+                                             <option value="all">All Years</option>
                                              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
                                          </select>
                                      </div>
@@ -275,6 +276,7 @@
                                      <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
                                          <h3 class="font-bold text-gray-900 text-base">Receivables</h3>
                                          <select v-model="selectedYearPendingPayments" class="rounded-lg border-gray-300 text-xs font-medium text-gray-700 shadow-2xs focus:border-indigo-500 focus:ring-indigo-500 bg-white px-2.5 py-1 cursor-pointer">
+                                             <option value="all">All Years</option>
                                              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
                                          </select>
                                      </div>
@@ -311,6 +313,7 @@
                                  <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
                                      <h3 class="font-bold text-gray-900 text-base">Active Plans</h3>
                                      <select v-model="selectedYearSubscriptions" class="rounded-lg border-gray-300 text-xs font-medium text-gray-700 shadow-2xs focus:border-indigo-500 focus:ring-indigo-500 bg-white px-2.5 py-1 cursor-pointer">
+                                         <option value="all">All Years</option>
                                          <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
                                      </select>
                                  </div>
@@ -344,6 +347,7 @@
                                   <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
                                       <h3 class="font-bold text-gray-900 text-base">Renewals Ledger</h3>
                                       <select v-model="selectedYearRenewals" class="rounded-lg border-gray-300 text-xs font-medium text-gray-700 shadow-2xs focus:border-indigo-500 focus:ring-indigo-500 bg-white px-2.5 py-1 cursor-pointer">
+                                          <option value="all">All Years</option>
                                           <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
                                       </select>
                                   </div>
@@ -1162,6 +1166,10 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    availableYears: {
+        type: Array,
+        default: () => [],
+    },
     topPaidCustomers: {
         type: Array,
         default: () => [],
@@ -1177,42 +1185,81 @@ const activeSubMetric = ref('sales'); // sales, revenue, customers
 const comparisonMode = ref('yoy'); // yoy, mom
 
 const currentYear = new Date().getFullYear();
-const availableYears = [];
-for (let y = currentYear - 10; y <= currentYear + 10; y++) {
-    availableYears.push(y.toString());
-}
-availableYears.sort((a, b) => b - a);
-
-const yearsToUse = computed(() => {
-    return availableYears;
+const availableYears = computed(() => {
+    if (props.availableYears && props.availableYears.length > 0) {
+        return props.availableYears;
+    }
+    const years = [];
+    for (let y = currentYear - 10; y <= currentYear + 10; y++) {
+        years.push(y.toString());
+    }
+    years.sort((a, b) => parseInt(b) - parseInt(a));
+    return years;
 });
 
-const selectedYearCustomers = ref(currentYear.toString());
-const selectedYearTotalSales = ref(currentYear.toString());
-const selectedYearReceivedPayments = ref(currentYear.toString());
-const selectedYearPendingPayments = ref(currentYear.toString());
-const selectedYearSubscriptions = ref(currentYear.toString());
+const yearsToUse = computed(() => {
+    return availableYears.value;
+});
 
-const selectedComparisonYear = ref(currentYear.toString());
+const getInitialYear = (dataset) => {
+    if (dataset && dataset.length > 0) {
+        for (const row of dataset) {
+            if (row && row.month) {
+                const parts = row.month.split(' ');
+                const yr = parts[parts.length - 1];
+                if (yr && !isNaN(parseInt(yr))) return yr;
+            }
+        }
+    }
+    if (props.dynamicYears && props.dynamicYears.length > 0) {
+        return props.dynamicYears[0];
+    }
+    return currentYear.toString();
+};
+
+const selectedYearCustomers = ref(getInitialYear(props.reportsData?.customers));
+const selectedYearTotalSales = ref(getInitialYear(props.reportsData?.totalSales));
+const selectedYearReceivedPayments = ref(getInitialYear(props.reportsData?.receivedPayments));
+const selectedYearPendingPayments = ref(getInitialYear(props.reportsData?.pendingPayments));
+const selectedYearSubscriptions = ref(getInitialYear(props.reportsData?.subscriptions));
+const selectedYearRenewals = ref(getInitialYear(props.reportsData?.renewals));
+
+const selectedComparisonYear = ref(props.dynamicYears && props.dynamicYears.length > 0 ? props.dynamicYears[0] : currentYear.toString());
 
 const filteredCustomers = computed(() => {
+    if (!props.reportsData?.customers) return [];
+    if (!selectedYearCustomers.value || selectedYearCustomers.value === 'all') return props.reportsData.customers;
     return props.reportsData.customers.filter(row => row.month && row.month.endsWith(selectedYearCustomers.value));
 });
 
 const filteredTotalSales = computed(() => {
+    if (!props.reportsData?.totalSales) return [];
+    if (!selectedYearTotalSales.value || selectedYearTotalSales.value === 'all') return props.reportsData.totalSales;
     return props.reportsData.totalSales.filter(row => row.month && row.month.endsWith(selectedYearTotalSales.value));
 });
 
 const filteredReceivedPayments = computed(() => {
+    if (!props.reportsData?.receivedPayments) return [];
+    if (!selectedYearReceivedPayments.value || selectedYearReceivedPayments.value === 'all') return props.reportsData.receivedPayments;
     return props.reportsData.receivedPayments.filter(row => row.month && row.month.endsWith(selectedYearReceivedPayments.value));
 });
 
 const filteredPendingPayments = computed(() => {
+    if (!props.reportsData?.pendingPayments) return [];
+    if (!selectedYearPendingPayments.value || selectedYearPendingPayments.value === 'all') return props.reportsData.pendingPayments;
     return props.reportsData.pendingPayments.filter(row => row.month && row.month.endsWith(selectedYearPendingPayments.value));
 });
 
 const filteredSubscriptions = computed(() => {
+    if (!props.reportsData?.subscriptions) return [];
+    if (!selectedYearSubscriptions.value || selectedYearSubscriptions.value === 'all') return props.reportsData.subscriptions;
     return props.reportsData.subscriptions.filter(row => row.month && row.month.endsWith(selectedYearSubscriptions.value));
+});
+
+const filteredRenewals = computed(() => {
+    if (!props.reportsData?.renewals) return [];
+    if (!selectedYearRenewals.value || selectedYearRenewals.value === 'all') return props.reportsData.renewals;
+    return props.reportsData.renewals.filter(row => row.month && row.month.endsWith(selectedYearRenewals.value));
 });
 
 
@@ -1323,7 +1370,7 @@ const calculatedQuarterlyComparisons = computed(() => {
     return data;
 });
 
-const selectedReceivedOutstandingYear = ref(currentYear.toString());
+const selectedReceivedOutstandingYear = ref(props.dynamicYears && props.dynamicYears.length > 0 ? props.dynamicYears[0] : currentYear.toString());
 
 const calculatedReceivedOutstanding = computed(() => {
     const year = parseInt(selectedReceivedOutstandingYear.value);
@@ -1360,10 +1407,10 @@ const receivedOutstandingTotals = computed(() => {
     return { sales, received, outstanding, rate };
 });
 
-const leftPnlYear = ref(currentYear.toString());
+const leftPnlYear = ref(props.dynamicYears && props.dynamicYears.length > 0 ? props.dynamicYears[0] : currentYear.toString());
 const leftPnlMonth = ref((new Date().getMonth() + 1).toString());
 
-const rightPnlYear = ref((currentYear - 1).toString());
+const rightPnlYear = ref(props.dynamicYears && props.dynamicYears.length > 1 ? props.dynamicYears[1] : (parseInt(leftPnlYear.value) - 1).toString());
 const rightPnlMonth = ref((new Date().getMonth() + 1).toString());
 
 const getPnlDataFor = (yearVal, monthVal) => {
@@ -1663,7 +1710,13 @@ const standardChartData = computed(() => {
         label = 'New Subscriptions';
         borderColor = 'rgb(168, 85, 247)';
         backgroundColor = 'rgba(168, 85, 247, 0.1)';
-
+        isCount = true;
+    } else if (activeStandardTab.value === 'renewals') {
+        rawData = filteredRenewals.value;
+        label = 'Renewals';
+        borderColor = 'rgb(249, 115, 22)';
+        backgroundColor = 'rgba(249, 115, 22, 0.1)';
+        isCount = true;
     } else if (activeStandardTab.value === 'top_paid') {
         return {
             labels: props.topPaidCustomers.map(c => c.name),
@@ -1713,7 +1766,7 @@ const standardChartData = computed(() => {
 });
 
 const standardChartOptions = computed(() => {
-    const isCount = activeStandardTab.value === 'customers' || activeStandardTab.value === 'subscriptions';
+    const isCount = activeStandardTab.value === 'customers' || activeStandardTab.value === 'subscriptions' || activeStandardTab.value === 'renewals';
     return {
         plugins: {
             legend: {

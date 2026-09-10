@@ -20,9 +20,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(BackfillDefaultTenantSeeder::class);
+
         User::firstOrCreate(
             ['email' => 'test@example.com'],
-            ['name' => 'John Doe', 'password' => bcrypt('password')]
+            ['name' => 'John Doe', 'password' => bcrypt('password'), 'tenant_id' => 1]
         );
 
         if (Customer::count() === 0) {
@@ -454,5 +456,8 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
         }
+
+        $this->call(BackfillDefaultTenantSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
     }
 }

@@ -76,40 +76,45 @@ const activeSubMenus = ref({});
 
 const navigationItems = [
     { name: 'Dashboard', href: '/', icon: 'fas fa-home', componentPrefix: 'Dashboard', permission: 'dashboard.view' },
-    { name: 'Customers', href: '/customers', icon: 'fas fa-users', componentPrefix: 'Customers', permission: 'customers.view' },
-    { name: 'Subscriptions', href: '/subscriptions', icon: 'fas fa-credit-card', componentPrefix: 'Subscriptions', permission: 'subscriptions.view' },
+    { name: 'Clients', href: '/clients', icon: 'fas fa-building', componentPrefix: 'Clients', superadminOnly: true, centralOnly: true },
+    { name: 'Customers', href: '/customers', icon: 'fas fa-users', componentPrefix: 'Customers', permission: 'customers.view', tenantOnly: true },
+    { name: 'Subscriptions', href: '/subscriptions', icon: 'fas fa-credit-card', componentPrefix: 'Subscriptions', permission: 'subscriptions.view', tenantOnly: true },
     {
         name: 'Payments',
         icon: 'fas fa-dollar-sign',
+        tenantOnly: true,
         children: [
             { name: 'Payment list', href: '/payments', componentPrefix: 'Payments', permission: 'payments.view' },
             { name: 'Payments channel', href: '/payment-channels', componentPrefix: 'PaymentChannels', permission: 'payment_channels.view' },
         ]
     },
-    { name: 'Invoices', href: '/invoices', icon: 'fas fa-file-invoice', componentPrefix: 'Invoices', permission: 'invoices.view' },
-    { name: 'Inventory', href: '/inventory', icon: 'fas fa-box', componentPrefix: 'Inventory', permission: 'inventory.view' },
-    { name: 'Expenses', href: '/expenses', icon: 'fas fa-receipt', componentPrefix: 'Expenses' },
-    { name: 'Purchases', href: '/purchases', icon: 'fas fa-shopping-cart', componentPrefix: 'Purchases' },
-    { name: 'Renewals', href: '/renewals', icon: 'fas fa-sync', componentPrefix: 'Renewals', permission: 'renewals.view' },
+    { name: 'Invoices', href: '/invoices', icon: 'fas fa-file-invoice', componentPrefix: 'Invoices', permission: 'invoices.view', tenantOnly: true },
+    { name: 'Inventory', href: '/inventory', icon: 'fas fa-box', componentPrefix: 'Inventory', permission: 'inventory.view', tenantOnly: true },
+    { name: 'Expenses', href: '/expenses', icon: 'fas fa-receipt', componentPrefix: 'Expenses', tenantOnly: true },
+    { name: 'Purchases', href: '/purchases', icon: 'fas fa-shopping-cart', componentPrefix: 'Purchases', tenantOnly: true },
+    { name: 'Renewals', href: '/renewals', icon: 'fas fa-sync', componentPrefix: 'Renewals', permission: 'renewals.view', tenantOnly: true },
     {
         name: 'Contracts',
         icon: 'fas fa-file-contract',
+        tenantOnly: true,
         children: [
             { name: 'Contract', href: '/contracts', componentPrefix: 'Contracts', permission: 'contracts.view' },
             { name: 'Contract types', href: '/contract-types', componentPrefix: 'ContractTypes', permission: 'contract_types.view' },
         ]
     },
-    { name: 'Reports', href: '/reports', icon: 'fas fa-chart-bar', componentPrefix: 'Reports', permission: 'reports.view' },
+    { name: 'Reports', href: '/reports', icon: 'fas fa-chart-bar', componentPrefix: 'Reports', permission: 'reports.view', tenantOnly: true },
     {
         name: 'Commissions',
         icon: 'fas fa-hand-holding-usd',
+        tenantOnly: true,
         children: [
             { name: 'Calculator', href: '/commissions', componentPrefix: 'Commissions', permission: 'payments.view' },
             { name: 'Slabs', href: '/commission-slabs', componentPrefix: 'CommissionSlabs', permission: 'settings.manage' },
         ]
     },
+    /* { name: 'Email Templates', href: '/email-templates', icon: 'fas fa-envelope', componentPrefix: 'EmailTemplates', centralOnly: true },*/
     { name: 'Users and Roles', href: '/users', icon: 'fas fa-user-shield', componentPrefix: 'Administration', permission: 'users.manage' },
-    { name: 'Billing Cycles', href: '/billing-cycles', icon: 'fas fa-history', componentPrefix: 'BillingCycles', permission: 'settings.manage' },
+    { name: 'Billing Cycles', href: '/billing-cycles', icon: 'fas fa-history', componentPrefix: 'BillingCycles', permission: 'settings.manage', tenantOnly: true },
     { name: 'Settings', href: '/settings', icon: 'fas fa-cog', componentPrefix: 'Settings', permission: 'settings.manage' },
 ];
 
@@ -132,8 +137,21 @@ const isAnyChildActive = (item) => {
     return item.children && item.children.some(child => isActive(child.componentPrefix));
 };
 
+const checkIsSuperadmin = () => {
+    const user = page.props.auth?.user;
+    if (!user) return false;
+    if (user.is_superadmin) return true;
+    const userRole = user.role;
+    const userRoles = user.roles || [];
+    const userRoleIds = (user.role_ids || []).map(Number);
+    return userRole === 'superadmin' || userRoles.includes('superadmin') || userRoles.includes('Superadmin') || userRoleIds.includes(1);
+};
+
 const filterChildren = (children) => {
+    const isSuperadmin = checkIsSuperadmin();
+
     return children.filter(child => {
+        if (isSuperadmin) return true;
         if (!child.permission) return true;
         const permissions = page.props.auth.user?.permissions || [];
         return permissions.includes(child.permission);
@@ -141,9 +159,31 @@ const filterChildren = (children) => {
 };
 
 const filteredNavigationItems = computed(() => {
+    const isSuperadmin = checkIsSuperadmin();
+    const isCentralDomain = page.props.isCentralDomain;
+
     return navigationItems.filter(item => {
+        // Superadmin sees ALL modules
+        if (isSuperadmin) {
+            // On tenant domain, hide central-only items like Clients
+            if (!isCentralDomain && item.centralOnly) {
+                return false;
+            }
+            return true;
+        }
+
+        if (!isCentralDomain && item.centralOnly) {
+            return false;
+        }
+        if (isCentralDomain && item.tenantOnly) {
+            return false;
+        }
+        if (item.superadminOnly && !isSuperadmin) {
+            return false;
+        }
         if (item.children) {
             return item.children.some(child => {
+                if (child.superadminOnly && !isSuperadmin) return false;
                 if (!child.permission) return true;
                 const permissions = page.props.auth.user?.permissions || [];
                 return permissions.includes(child.permission);

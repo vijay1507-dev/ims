@@ -19,6 +19,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
+            return ($user->roles->contains('id', 1) || $user->hasRole(1)) ? true : null;
+        });
     }
 }

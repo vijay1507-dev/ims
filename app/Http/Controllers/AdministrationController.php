@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Gate;
+use Spatie\Permission\Models\Role;
 
 class AdministrationController extends Controller
 {
@@ -14,9 +15,16 @@ class AdministrationController extends Controller
     {
         Gate::authorize('users.manage');
 
+        $currentUser = auth()->user();
+
+        $rolesQuery = Role::with('permissions');
+        if (!$currentUser || !$currentUser->isSuperAdmin()) {
+            $rolesQuery->where('id', '!=', 1)->where('name', '!=', 'superadmin');
+        }
+
         return Inertia::render('Administration/Index', [
             'users' => User::with('roles')->get(),
-            'roles' => \Spatie\Permission\Models\Role::with('permissions')->get(),
+            'roles' => $rolesQuery->get(),
         ]);
     }
 }

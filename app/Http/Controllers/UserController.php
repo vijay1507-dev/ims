@@ -19,6 +19,11 @@ class UserController extends Controller
     {
         \Illuminate\Support\Facades\Gate::authorize('users.manage');
 
+        $currentUser = auth()->user();
+        if ($user->isSuperAdmin() && (!$currentUser || !$currentUser->isSuperAdmin())) {
+            abort(403, 'Unauthorized access to superadmin user permissions.');
+        }
+
         return \Inertia\Inertia::render('Users/Permissions', [
             'user' => $user,
             'permissions' => \Spatie\Permission\Models\Permission::all(),
@@ -30,7 +35,12 @@ class UserController extends Controller
     {
         \Illuminate\Support\Facades\Gate::authorize('users.manage');
 
-        $user->syncPermissions($request->permissions);
+        $currentUser = auth()->user();
+        if ($user->isSuperAdmin() && (!$currentUser || !$currentUser->isSuperAdmin())) {
+            abort(403, 'Unauthorized modification of superadmin user permissions.');
+        }
+
+        $user->syncPermissions($request->permissions ?? []);
 
         return redirect()->route('users.index')->with('success', 'Permissions updated successfully');
     }
@@ -38,6 +48,11 @@ class UserController extends Controller
     public function store(Request $request)
     {
         \Illuminate\Support\Facades\Gate::authorize('users.manage');
+
+        $currentUser = auth()->user();
+        if (strtolower($request->role) === 'superadmin' && (!$currentUser || !$currentUser->isSuperAdmin())) {
+            abort(403, 'Only Superadmins can assign the superadmin role.');
+        }
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -60,6 +75,11 @@ class UserController extends Controller
     public function update(Request $request, \App\Models\User $user)
     {
         \Illuminate\Support\Facades\Gate::authorize('users.manage');
+
+        $currentUser = auth()->user();
+        if ((strtolower($request->role) === 'superadmin' || $user->isSuperAdmin()) && (!$currentUser || !$currentUser->isSuperAdmin())) {
+            abort(403, 'Only Superadmins can modify or assign the superadmin role.');
+        }
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -85,6 +105,11 @@ class UserController extends Controller
     {
         \Illuminate\Support\Facades\Gate::authorize('users.manage');
         
+        $currentUser = auth()->user();
+        if ($user->isSuperAdmin() && (!$currentUser || !$currentUser->isSuperAdmin())) {
+            abort(403, 'Cannot delete superadmin user.');
+        }
+
         $user->delete();
 
         return redirect()->back()->with('success', 'User deleted successfully');

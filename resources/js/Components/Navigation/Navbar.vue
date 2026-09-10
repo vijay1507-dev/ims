@@ -18,7 +18,7 @@
                 
                 <div class="flex items-center space-x-4">
                     <!-- Search Bar -->
-                    <div v-if="showSearch" class="hidden md:block relative search-container">
+                    <div v-if="(!page.props.isCentralDomain || isSuperadmin) && showSearch" class="hidden md:block relative search-container">
                         <div class="relative">
                             <input
                                 v-model="searchQuery"
@@ -186,6 +186,11 @@ import { useSidebar } from '../../Composables/useSidebar';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const isSuperadmin = computed(() => {
+    const role = user.value?.role;
+    const roles = user.value?.roles || [];
+    return role === 'superadmin' || roles.includes('superadmin') || roles.includes('Superadmin');
+});
 
 const form = useForm({});
 const logout = () => {

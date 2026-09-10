@@ -37,13 +37,18 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         return array_merge(parent::share($request), [
+            'isCentralDomain' => in_array($request->getHost(), config('tenancy.central_domains', [])),
             'auth' => [
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'roles' => $request->user()->getRoleNames(),
-                    'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                    'role' => $request->user()->role,
+                    'is_superadmin' => $request->user()->isSuperAdmin(),
+                    'permissions' => ($request->user()->isSuperAdmin() || $request->user()->hasRole('Admin') || $request->user()->hasRole(2))
+                        ? \Spatie\Permission\Models\Permission::pluck('name')
+                        : $request->user()->getAllPermissions()->pluck('name'),
                 ] : null,
             ],
             'flash' => [

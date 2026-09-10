@@ -16,6 +16,15 @@ class DashboardController extends Controller
         \App\Models\Subscription::syncAllCustomersWithSubscriptions();
         $user = auth()->user();
 
+        if ($user && ($user->isSuperAdmin() || $user->hasRole('superadmin') || $user->role === 'superadmin')) {
+            return Inertia::render('Dashboard/Index', [
+                'kpis' => $dashboardService->getKpiMetrics(),
+                'charts' => $dashboardService->getChartDatasets(),
+                'activities' => $dashboardService->getRecentActivities(),
+                'quickStats' => $dashboardService->getQuickStats(),
+            ]);
+        }
+
         if (!$user->can('dashboard.view')) {
             $navigation = [
                 'customers.view' => 'customers.index',

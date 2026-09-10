@@ -40,6 +40,28 @@ class FortifyServiceProvider extends ServiceProvider
             return Inertia::render('Auth/Login');
         });
 
+        Fortify::authenticateUsing(function (Request $request) {
+            $email = $request->input(Fortify::username());
+            $password = $request->input('password');
+
+            if (tenancy()->initialized) {
+                // Tenant context: Find user scoped to active tenant
+                $user = \App\Models\User::where(Fortify::username(), $email)->first();
+            } else {
+                // Central context: Only central users (tenant_id IS NULL) can log in
+                $user = \App\Models\User::withoutGlobalScopes()
+                    ->where(Fortify::username(), $email)
+                    ->whereNull('tenant_id')
+                    ->first();
+            }
+
+            if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+                return $user;
+            }
+
+            return null;
+        });
+
         Fortify::registerView(function () {
             return Inertia::render('Auth/Register');
         });

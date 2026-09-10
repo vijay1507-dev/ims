@@ -76,40 +76,6 @@ class RenewalController extends Controller
             return $ts !== false ? date('M d, Y', $ts) : $dateStr;
         };
 
-        $dbRenewals = $query->latest()->get()->map(function ($ren) use ($currentYear, $formatDateStr) {
-            $dateStr = $ren->renewal_date;
-            if ($dateStr && str_ends_with($dateStr, '2024')) {
-                $dateStr = str_replace('2024', $currentYear, $dateStr);
-            }
-            $dateStr = $formatDateStr($dateStr);
-
-            $daysLeftStr = $ren->days_left;
-            $daysLeftVal = 30;
-            $ts = strtotime($dateStr);
-            if ($ts !== false) {
-                $diff = round(($ts - time()) / 86400);
-                $daysLeftVal = (int)$diff;
-                $daysLeftStr = ($daysLeftVal < 0 ? 0 : $daysLeftVal) . ' days';
-            }
-
-            $priority = $ren->priority;
-            if ($daysLeftVal <= 0) {
-                $priority = 'expired';
-            }
-
-            return [
-                'id' => $ren->id,
-                'customer_name' => $ren->customer_name,
-                'type' => $ren->type,
-                'plan_asset' => $ren->plan_asset,
-                'current_value' => $ren->current_value ?? '$0',
-                'renewal_date' => $dateStr ?? $ren->created_at->addDays(30)->format('M d, Y'),
-                'days_left' => $daysLeftStr,
-                'priority' => $priority,
-                'renewal_reminders' => $ren->renewal_reminders ?? '7_days',
-            ];
-        });
-
         // Load active subscriptions and convert to renewal entities
         $subQuery = \App\Models\Subscription::query();
         if ($request->filled('search')) {
@@ -266,8 +232,8 @@ class RenewalController extends Controller
             });
         }
 
-        // Merge DB renewals, active Subscriptions, and active Payments
-        $renewals = $dbRenewals->concat($subscriptions)->concat($paymentsAsRenewals)->values();
+        // Merge active Subscriptions and active Payments dynamically
+        $renewals = $subscriptions->concat($paymentsAsRenewals)->values();
 
         // Keep only upcoming (within 30 days) and expired renewals
         $renewals = $renewals->filter(function ($item) {

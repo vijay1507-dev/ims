@@ -1,12 +1,33 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const form = useForm({
     name: '',
+    company_name: '',
+    subdomain: '',
     email: '',
     password: '',
     password_confirmation: '',
 });
+
+const baseHost = computed(() => {
+    if (typeof window !== 'undefined') {
+        const host = window.location.hostname;
+        return host.startsWith('www.') ? host.slice(4) : host;
+    }
+    return 'localhost';
+});
+
+const formattedSubdomain = computed(() => {
+    if (!form.subdomain) return '';
+    const cleanSubdomain = form.subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    return cleanSubdomain ? `${cleanSubdomain}.${baseHost.value}` : '';
+});
+
+const handleSubdomainInput = (e) => {
+    form.subdomain = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+};
 
 const submit = () => {
     form.post('/register', {
@@ -16,13 +37,13 @@ const submit = () => {
 </script>
 
 <template>
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-50">
-        <Head title="Register" />
+    <div class="min-h-screen flex flex-col sm:justify-center items-center py-10 bg-gray-50">
+        <Head title="Register Tenant" />
 
-        <div class="w-full sm:max-w-md mt-6 px-8 py-10 bg-white shadow-xl overflow-hidden sm:rounded-2xl border border-gray-100">
+        <div class="w-full sm:max-w-md px-8 py-10 bg-white shadow-xl overflow-hidden sm:rounded-2xl border border-gray-100">
             <div class="mb-8 text-center">
-                <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Create Account</h1>
-                <p class="mt-2 text-sm text-gray-500">Join our enterprise platform today</p>
+                <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Create Tenant</h1>
+                <p class="mt-2 text-sm text-gray-500">Setup your organization and subdomain</p>
             </div>
 
             <form @submit.prevent="submit">
@@ -39,6 +60,40 @@ const submit = () => {
                         placeholder="John Doe"
                     />
                     <div v-if="form.errors.name" class="mt-2 text-sm text-red-600">{{ form.errors.name }}</div>
+                </div>
+
+                <div class="mt-5">
+                    <label for="company_name" class="block text-sm font-medium text-gray-700 mb-1">Company / Organization Name</label>
+                    <input
+                        id="company_name"
+                        type="text"
+                        class="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                        v-model="form.company_name"
+                        placeholder="Acme Corporation"
+                    />
+                    <div v-if="form.errors.company_name" class="mt-2 text-sm text-red-600">{{ form.errors.company_name }}</div>
+                </div>
+
+                <div class="mt-5">
+                    <label for="subdomain" class="block text-sm font-medium text-gray-700 mb-1">Sub-domain Name</label>
+                    <div class="flex rounded-lg shadow-xs">
+                        <input
+                            id="subdomain"
+                            type="text"
+                            class="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-l-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                            v-model="form.subdomain"
+                            @input="handleSubdomainInput"
+                            required
+                            placeholder="acme"
+                        />
+                        <span class="inline-flex items-center px-4 rounded-r-lg border border-l-0 border-gray-200 bg-gray-100 text-gray-500 text-sm font-medium">
+                            .{{ baseHost }}
+                        </span>
+                    </div>
+                    <p v-if="formattedSubdomain" class="mt-1.5 text-xs text-indigo-600 font-medium">
+                        Your workspace URL: <span class="font-bold underline">{{ formattedSubdomain }}</span>
+                    </p>
+                    <div v-if="form.errors.subdomain" class="mt-2 text-sm text-red-600">{{ form.errors.subdomain }}</div>
                 </div>
 
                 <div class="mt-5">
@@ -90,7 +145,7 @@ const submit = () => {
                         :class="{ 'opacity-75 cursor-not-allowed': form.processing }"
                         :disabled="form.processing"
                     >
-                        Register Account
+                        Register Tenant & Account
                     </button>
                 </div>
 

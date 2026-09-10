@@ -234,7 +234,28 @@ class ReportController extends Controller
             ];
         }
 
-
+        // Group Renewals
+        $renewals = Renewal::all();
+        $groupedRenewals = [];
+        foreach ($renewals as $ren) {
+            $dates = $getMonthKeys($ren->renewal_date ?: $ren->created_at->format('Y-m-d'));
+            $key = $dates['key'];
+            if (!isset($groupedRenewals[$key])) {
+                $groupedRenewals[$key] = [
+                    'month' => $dates['label'],
+                    'count' => 0,
+                    'items' => []
+                ];
+            }
+            $groupedRenewals[$key]['count']++;
+            $groupedRenewals[$key]['items'][] = [
+                'name' => $ren->customer_name,
+                'email' => $ren->type . ' - ' . $ren->plan_asset,
+                'status' => $ren->priority,
+                'details' => 'Value: $' . number_format((float)$ren->current_value, 2) . ' (' . $ren->days_left . ' days left)',
+                'date' => $ren->renewal_date,
+            ];
+        }
 
         // Sort Helper
         $sortGroups = function ($arr) {
@@ -251,6 +272,7 @@ class ReportController extends Controller
             ->concat($customers->map(fn($c) => $c->joined_date ? date('Y', strtotime($c->joined_date)) : $c->created_at->format('Y')))
             ->concat($invoices->map(fn($i) => $i->invoice_date ? date('Y', strtotime($i->invoice_date)) : $i->created_at->format('Y')))
             ->concat($payments->map(fn($p) => $p->payment_date ? date('Y', strtotime($p->payment_date)) : $p->created_at->format('Y')))
+            ->concat($renewals->map(fn($r) => $r->renewal_date ? date('Y', strtotime($r->renewal_date)) : $r->created_at->format('Y')))
             ->filter();
             
         if ($allDates->isNotEmpty()) {
@@ -370,6 +392,14 @@ class ReportController extends Controller
                 ];
             });
 
+        // Generate list containing previous 10 years and next 10 years of the current year
+        $currentYear = (int)date('Y');
+        $availableYears = [];
+        for ($y = $currentYear - 10; $y <= $currentYear + 10; $y++) {
+            $availableYears[] = (string)$y;
+        }
+        rsort($availableYears);
+
         return Inertia::render('Reports/Index', [
             'metrics' => [
                 'total_revenue' => '$' . number_format($totalRevenue, 2),
@@ -387,10 +417,12 @@ class ReportController extends Controller
                 'receivedPayments' => $sortGroups($groupedReceived),
                 'pendingPayments' => $sortGroups($groupedPending),
                 'subscriptions' => $sortGroups($groupedSubs),
+                'renewals' => $sortGroups($groupedRenewals),
             ],
             'topPaidCustomers' => $topPaidCustomers,
             'comparisonData' => $comparisonData,
             'dynamicYears' => $availableYearsList,
+            'availableYears' => $availableYears,
             'expenseCategories' => $expenseCategoriesList,
         ]);
     }
@@ -655,6 +687,20 @@ class ReportController extends Controller
                     ];
                 }
             }
+        } elseif ($type === 'renewals') {
+            $renewals = Renewal::all();
+            foreach ($renewals as $ren) {
+                $parts = $getDateParts($ren->renewal_date ?: $ren->created_at->format('Y-m-d'));
+                if ($parts['month_name'] === $selectedMonth && $parts['year'] === $selectedYear) {
+                    $items[] = [
+                        'name' => $ren->customer_name,
+                        'email' => $ren->type . ' - ' . $ren->plan_asset,
+                        'status' => $ren->priority,
+                        'details' => 'Value: $' . number_format((float)$ren->current_value, 2) . ' (' . $ren->days_left . ' days left)',
+                        'date' => $ren->renewal_date,
+                    ];
+                }
+            }
         }
 
         // Clean label formatting for title
@@ -663,7 +709,8 @@ class ReportController extends Controller
             'totalSales' => 'Total Sales',
             'receivedPayments' => 'Received Payments',
             'pendingPayments' => 'Pending Payments',
-            'subscriptions' => 'Subscriptions'
+            'subscriptions' => 'Subscriptions',
+            'renewals' => 'Renewals'
         ];
         $typeName = $titleMapping[$type] ?? ucfirst($type);
 

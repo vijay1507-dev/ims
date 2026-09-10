@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\LogsActivity;
+use App\Traits\BelongsToTenant;
 
 class Renewal extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, BelongsToTenant;
 
     protected $fillable = [
         'customer_name',
@@ -20,5 +21,6 @@ class Renewal extends Model
         'days_left',
         'priority',
         'renewal_reminders',
+        'tenant_id',
     ];
 }

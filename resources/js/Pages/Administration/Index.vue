@@ -126,7 +126,7 @@
                                             <i class="fas fa-shield-alt"></i>
                                         </Link>
                                         <button 
-                                            v-if="role.name !== 'admin'"
+                                            v-if="!['admin', 'superadmin'].includes(role.name.toLowerCase())"
                                             @click="deleteRole(role.id)" 
                                             class="text-rose-600 hover:text-rose-900 p-2 bg-rose-50 rounded-lg transition-colors inline-flex items-center justify-center cursor-pointer"
                                             title="Delete Role"
@@ -206,9 +206,8 @@
                         <div v-if="userForm.errors.email" class="text-rose-600 text-[10px] mt-1 font-bold">{{ userForm.errors.email }}</div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Password (Leave blank to keep current)</label>
-                        <input v-model="userForm.password" type="password" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="••••••••">
-                        <div v-if="userForm.errors.password" class="text-rose-600 text-[10px] mt-1 font-bold">{{ userForm.errors.password }}</div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Password (Cannot be changed here)</label>
+                        <input type="password" disabled class="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-400 cursor-not-allowed select-none opacity-75" placeholder="••••••••">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Assign Role</label>

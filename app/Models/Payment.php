@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\LogsActivity;
+use App\Traits\BelongsToTenant;
 
 class Payment extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, LogsActivity, SoftDeletes, BelongsToTenant;
 
     protected static function booted()
     {

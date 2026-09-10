@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\LogsActivity;
+use App\Traits\BelongsToTenant;
 
 class Expense extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, BelongsToTenant;
 
     /**
      * The attributes that are mass assignable.

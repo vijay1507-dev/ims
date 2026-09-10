@@ -29,7 +29,7 @@ class RoleController extends Controller
         ]);
 
         $role = Role::create(['name' => $request->name]);
-        $role->syncPermissions($request->permissions);
+        $role->syncPermissions($request->permissions ?? []);
 
         return redirect()->route('users.index', ['tab' => 'roles'])->with('success', 'Role created successfully');
     }
@@ -37,6 +37,11 @@ class RoleController extends Controller
     public function permissions(Role $role)
     {
         Gate::authorize('users.manage');
+
+        $currentUser = auth()->user();
+        if (($role->id == 1 || strtolower($role->name) === 'superadmin') && (!$currentUser || !$currentUser->isSuperAdmin())) {
+            abort(403, 'Unauthorized access to superadmin role.');
+        }
 
         return Inertia::render('Administration/Roles/Permissions', [
             'role' => $role,
@@ -49,7 +54,12 @@ class RoleController extends Controller
     {
         Gate::authorize('users.manage');
 
-        $role->syncPermissions($request->permissions);
+        $currentUser = auth()->user();
+        if (($role->id == 1 || strtolower($role->name) === 'superadmin') && (!$currentUser || !$currentUser->isSuperAdmin())) {
+            abort(403, 'Unauthorized modification of superadmin role.');
+        }
+
+        $role->syncPermissions($request->permissions ?? []);
 
         return redirect()->route('users.index', ['tab' => 'roles'])->with('success', 'Role permissions updated successfully');
     }
@@ -58,6 +68,10 @@ class RoleController extends Controller
     {
         Gate::authorize('users.manage');
         
+        if ($role->id == 1 || in_array(strtolower($role->name), ['superadmin', 'admin'])) {
+            abort(403, 'Protected system role cannot be deleted.');
+        }
+
         $role->delete();
 
         return redirect()->back()->with('success', 'Role deleted successfully');

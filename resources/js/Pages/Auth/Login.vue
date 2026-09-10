@@ -74,16 +74,15 @@ const submit = () => {
                         <span v-else>Sign In</span>
                     </button>
                 </div>
+                <div class="mt-8 text-center border-t border-gray-100 pt-6">
+                    <p class="text-sm text-gray-500">
+                        Don't have an account? 
+                        <Link href="/register" class="font-bold text-indigo-600 hover:text-indigo-500 transition-colors">
+                            Sign Up
+                        </Link>
+                    </p>
+                </div>
             </form>
-
-           <!-- <div class="mt-8 text-center border-t border-gray-100 pt-6">
-                <p class="text-sm text-gray-500">
-                    Don't have an account? 
-                    <Link href="/register" class="font-semibold text-indigo-600 hover:text-indigo-500">
-                        Create one
-                    </Link>
-                </p>
-            </div> -->
         </div>
 
         <div class="mt-8 text-gray-400 text-xs">

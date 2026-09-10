@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\LogsActivity;
+use App\Traits\BelongsToTenant;
 
 class Purchase extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, BelongsToTenant;
 
     protected $fillable = [
         'supplier_name',
