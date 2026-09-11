@@ -14,11 +14,11 @@ class EnsureTenantUser
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $centralDomains = config('tenancy.central_domains');
+        $centralDomains = config('tenancy.central_domains', []);
 
-        // Central domain requests remain in central context
+        // Central domain requests must not access tenant routes
         if (in_array($request->getHost(), $centralDomains)) {
-            return $next($request);
+            abort(404, 'Tenant workspace route not found on central domain.');
         }
 
         if (!tenancy()->initialized) {

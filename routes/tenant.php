@@ -27,6 +27,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\BulkDeleteController;
+use App\Http\Controllers\Auth\TenantAutoLoginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +44,11 @@ Route::middleware([
     'web',
     \App\Http\Middleware\EnsureTenantUser::class,
 ])->group(function () {
+
+    // Signed Auto-Login for newly registered tenant admins
+    Route::get('/auth/auto-login/{user}', [TenantAutoLoginController::class, 'login'])
+        ->name('tenant.auto-login')
+        ->middleware('signed');
 
     Route::middleware(['auth'])->group(function () {
         // Workspace Dashboard

@@ -27,6 +27,13 @@ class CreateNewUser implements CreatesNewUsers
     {
         $subdomain = strtolower(trim($input['subdomain'] ?? ''));
         $centralDomains = config('tenancy.central_domains', []);
+
+        if (tenancy()->initialized || !in_array(request()->getHost(), $centralDomains)) {
+            throw ValidationException::withMessages([
+                'subdomain' => ['Tenant registration is only permitted on the main platform domain.'],
+            ]);
+        }
+
         $appHost = reset($centralDomains) ?: (parse_url(config('app.url'), PHP_URL_HOST) ?: '');
         $domainName = str_contains($subdomain, '.') ? $subdomain : ($appHost ? ($subdomain . '.' . $appHost) : $subdomain);
 

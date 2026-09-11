@@ -96,9 +96,15 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-medium">
                             <div class="flex flex-col items-start space-y-1">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
-                                    <i class="fas fa-link mr-1.5 text-xs"></i>{{ client.domain }}
-                                </span>
+                                <a
+                                    :href="formatDomainUrl(client.domain)"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center px-2.5 py-1 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-900 text-xs font-bold border border-indigo-100 transition-colors group cursor-pointer"
+                                    title="Open domain in new tab"
+                                >
+                                    <i class="fas fa-external-link-alt mr-1.5 text-[10px] text-indigo-500 group-hover:text-indigo-700"></i>{{ client.domain }}
+                                </a>
                                 <div>
                                     <span v-if="client.is_active" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span> Active
@@ -160,101 +166,157 @@
             </DataTable>
 
             <!-- Add Client Modal -->
-            <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
-                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                        <h3 class="text-lg font-semibold text-gray-900">Add New Client Tenant</h3>
+            <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity p-4">
+                <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-auto overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+                        <h3 class="text-lg font-semibold text-gray-900">Add Client</h3>
                         <button @click="closeModal" class="text-gray-400 hover:text-gray-600 cursor-pointer bg-transparent border-0">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <form @submit.prevent="submitCreate">
-                        <div class="p-6 space-y-4">
+                    <form @submit.prevent="submitCreate" novalidate class="flex flex-col flex-1 min-h-0 overflow-hidden">
+                        <div
+                            class="p-6 space-y-4 flex-1"
+                            :class="isPasswordFocused ? 'overflow-y-auto' : 'overflow-hidden'"
+                        >
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Company / Organization Name</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Company / Organization Name <span class="text-red-500">*</span>
+                                </label>
                                 <input
                                     v-model="form.name"
                                     type="text"
-                                    required
                                     placeholder="Acme Corp"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
+                                    :class="form.errors.name ? 'border-red-500 focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-2 focus:ring-indigo-500'"
+                                    @input="form.clearErrors('name')"
                                 >
                                 <div v-if="form.errors.name" class="mt-1 text-xs text-red-600">{{ form.errors.name }}</div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Sub-domain Name</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Domain Name <span class="text-red-500">*</span>
+                                </label>
                                 <div class="flex rounded-lg shadow-xs">
                                     <input
                                         v-model="form.subdomain"
                                         @input="handleSubdomainInput"
                                         type="text"
-                                        required
                                         placeholder="acme"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-l-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        class="w-full px-3 py-2 border rounded-l-lg text-sm outline-none transition-colors"
+                                        :class="form.errors.subdomain ? 'border-red-500 focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-2 focus:ring-indigo-500'"
                                     >
-                                    <span class="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-gray-300 bg-gray-100 text-gray-500 text-xs font-medium">
+                                    <span
+                                        class="inline-flex items-center px-3 rounded-r-lg border border-l-0 text-xs font-medium"
+                                        :class="form.errors.subdomain ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 bg-gray-100 text-gray-500'"
+                                    >
                                         .{{ baseHost }}
                                     </span>
                                 </div>
-                                <p v-if="formattedSubdomain" class="mt-1 text-xs text-indigo-600 font-medium">
+                                <p v-if="formattedSubdomain && !form.errors.subdomain" class="mt-1 text-xs text-indigo-600 font-medium">
                                     Domain: <span class="font-bold underline">{{ formattedSubdomain }}</span>
                                 </p>
                                 <div v-if="form.errors.subdomain" class="mt-1 text-xs text-red-600">{{ form.errors.subdomain }}</div>
                             </div>
 
-                            <hr class="border-gray-100 my-2" />
-
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Primary Admin Name</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Admin Name <span class="text-red-500">*</span>
+                                </label>
                                 <input
                                     v-model="form.admin_name"
                                     type="text"
-                                    required
                                     placeholder="John Doe"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
+                                    :class="form.errors.admin_name ? 'border-red-500 focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-2 focus:ring-indigo-500'"
+                                    @input="form.clearErrors('admin_name')"
                                 >
                                 <div v-if="form.errors.admin_name" class="mt-1 text-xs text-red-600">{{ form.errors.admin_name }}</div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Primary Admin Email</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Admin Email <span class="text-red-500">*</span>
+                                </label>
                                 <input
                                     v-model="form.admin_email"
                                     type="email"
-                                    required
                                     placeholder="admin@acme.com"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
+                                    :class="form.errors.admin_email ? 'border-red-500 focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-2 focus:ring-indigo-500'"
+                                    @input="form.clearErrors('admin_email')"
                                 >
                                 <div v-if="form.errors.admin_email" class="mt-1 text-xs text-red-600">{{ form.errors.admin_email }}</div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Admin Password</label>
-                                <input
-                                    v-model="form.admin_password"
-                                    type="password"
-                                    required
-                                    placeholder="••••••••"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                >
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Password <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input
+                                        v-model="form.admin_password"
+                                        :type="showPassword ? 'text' : 'password'"
+                                        placeholder="••••••••"
+                                        class="w-full px-3 py-2 pr-10 border rounded-lg text-sm outline-none transition-colors"
+                                        :class="form.errors.admin_password ? 'border-red-500 focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-2 focus:ring-indigo-500'"
+                                        @focus="isPasswordFocused = true"
+                                        @blur="isPasswordFocused = false"
+                                        @input="form.clearErrors('admin_password')"
+                                    >
+                                    <button
+                                        type="button"
+                                        @click="showPassword = !showPassword"
+                                        @mousedown.prevent
+                                        class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+                                        tabindex="-1"
+                                    >
+                                        <i :class="['fas', showPassword ? 'fa-eye-slash' : 'fa-eye']"></i>
+                                    </button>
+                                </div>
                                 <div v-if="form.errors.admin_password" class="mt-1 text-xs text-red-600">{{ form.errors.admin_password }}</div>
+
+                                <!-- Password Validation Criteria Checklist (Only open when password field is clicked / focused) -->
+                                <div v-show="isPasswordFocused" class="mt-2.5 p-3.5 bg-slate-50/70 border border-slate-200/80 rounded-xl text-xs space-y-2 transition-all duration-200">
+                                    <div class="flex items-center space-x-2 transition-colors duration-150" :class="passwordCriteria.length ? 'text-emerald-600 font-medium' : 'text-slate-500'">
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full" :class="passwordCriteria.length ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                                        <span>Minimum 8 characters</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 transition-colors duration-150" :class="passwordCriteria.uppercase ? 'text-emerald-600 font-medium' : 'text-slate-500'">
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full" :class="passwordCriteria.uppercase ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                                        <span>At least one uppercase letter (A-Z)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 transition-colors duration-150" :class="passwordCriteria.lowercase ? 'text-emerald-600 font-medium' : 'text-slate-500'">
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full" :class="passwordCriteria.lowercase ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                                        <span>At least one lowercase letter (a-z)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 transition-colors duration-150" :class="passwordCriteria.numbers ? 'text-emerald-600 font-medium' : 'text-slate-500'">
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full" :class="passwordCriteria.numbers ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                                        <span>At least one number (0-9)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 transition-colors duration-150" :class="passwordCriteria.symbols ? 'text-emerald-600 font-medium' : 'text-slate-500'">
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full" :class="passwordCriteria.symbols ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+                                        <span>At least one symbol (e.g. @, #, $, !)</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="px-6 py-4 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50">
+                        <div class="px-6 py-4 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50 shrink-0">
                             <button
                                 type="button"
                                 @click="closeModal"
-                                class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
                                 :disabled="form.processing"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center"
-                                :disabled="form.processing"
+                                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm inline-flex items-center"
+                                :class="(!isFormValid || form.processing) ? 'bg-indigo-400 text-white/80 cursor-not-allowed opacity-60' : 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'"
+                                :disabled="!isFormValid || form.processing"
                             >
                                 <span v-if="form.processing">
                                     <i class="fas fa-spinner fa-spin mr-2"></i>Creating Client...
@@ -297,6 +359,8 @@ const searchQuery = ref(props.filters.search || '');
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
 const showAddModal = ref(false);
+const showPassword = ref(false);
+const isPasswordFocused = ref(false);
 
 const form = useForm({
     name: '',
@@ -304,6 +368,38 @@ const form = useForm({
     admin_name: '',
     admin_email: '',
     admin_password: '',
+});
+
+const passwordCriteria = computed(() => {
+    const pwd = form.admin_password || '';
+    return {
+        length: pwd.length >= 8,
+        uppercase: /[A-Z]/.test(pwd),
+        lowercase: /[a-z]/.test(pwd),
+        numbers: /[0-9]/.test(pwd),
+        symbols: /[^A-Za-z0-9]/.test(pwd),
+    };
+});
+
+const isAllPasswordCriteriaMet = computed(() => {
+    return !!(
+        passwordCriteria.value.length &&
+        passwordCriteria.value.uppercase &&
+        passwordCriteria.value.lowercase &&
+        passwordCriteria.value.numbers &&
+        passwordCriteria.value.symbols
+    );
+});
+
+const isFormValid = computed(() => {
+    return !!(
+        form.name && form.name.trim() !== '' &&
+        form.subdomain && form.subdomain.trim() !== '' &&
+        form.admin_name && form.admin_name.trim() !== '' &&
+        form.admin_email && form.admin_email.trim() !== '' &&
+        form.admin_password &&
+        isAllPasswordCriteriaMet.value
+    );
 });
 
 const baseHost = computed(() => {
@@ -322,6 +418,16 @@ const formattedSubdomain = computed(() => {
 
 const handleSubdomainInput = (e) => {
     form.subdomain = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+};
+
+const formatDomainUrl = (domain) => {
+    if (!domain || domain === 'N/A') return '#';
+    if (domain.startsWith('http://') || domain.startsWith('https://')) {
+        return domain;
+    }
+    const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
+    const port = typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : '';
+    return `${protocol}//${domain}${port}`;
 };
 
 const paginatedClients = computed(() => {
@@ -346,6 +452,8 @@ const triggerFilter = () => {
 
 const closeModal = () => {
     showAddModal.value = false;
+    showPassword.value = false;
+    isPasswordFocused.value = false;
     form.reset();
     form.clearErrors();
 };

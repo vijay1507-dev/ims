@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Illuminate\Validation\Rules\Password;
 
 class ClientController extends Controller
 {
@@ -107,7 +108,20 @@ class ClientController extends Controller
             ],
             'admin_name' => ['required', 'string', 'max:255'],
             'admin_email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class, 'email')],
-            'admin_password' => ['required', 'string', 'min:8'],
+            'admin_password' => [
+                'required',
+                'string',
+                Password::min(8)
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols(),
+            ],
+        ], [
+            'name.required' => 'The company / organization name field is required.',
+            'subdomain.required' => 'The domain name field is required.',
+            'admin_name.required' => 'The admin name field is required.',
+            'admin_email.required' => 'The admin email field is required.',
+            'admin_password.required' => 'The password field is required.',
         ]);
 
         // 1. Create Tenant

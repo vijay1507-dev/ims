@@ -14,6 +14,10 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Fortify;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
+use App\Http\Responses\RegisterResponse;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -22,7 +26,10 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(
+            RegisterResponseContract::class,
+            RegisterResponse::class
+        );
     }
 
     /**
@@ -46,16 +53,16 @@ class FortifyServiceProvider extends ServiceProvider
 
             if (tenancy()->initialized) {
                 // Tenant context: Find user scoped to active tenant
-                $user = \App\Models\User::where(Fortify::username(), $email)->first();
+                $user = User::where(Fortify::username(), $email)->first();
             } else {
                 // Central context: Only central users (tenant_id IS NULL) can log in
-                $user = \App\Models\User::withoutGlobalScopes()
+                $user = User::withoutGlobalScopes()
                     ->where(Fortify::username(), $email)
                     ->whereNull('tenant_id')
                     ->first();
             }
 
-            if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+            if ($user && Hash::check($password, $user->password)) {
                 return $user;
             }
 
@@ -63,6 +70,10 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         Fortify::registerView(function () {
+            $centralDomains = config('tenancy.central_domains', []);
+            if (tenancy()->initialized || !in_array(request()->getHost(), $centralDomains)) {
+                abort(404);
+            }
             return Inertia::render('Auth/Register');
         });
 

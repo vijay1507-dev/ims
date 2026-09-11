@@ -1,6 +1,9 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+
+const page = usePage();
+const isCentralDomain = computed(() => !!page.props.isCentralDomain);
 
 const form = useForm({
     email: '',
@@ -74,7 +77,7 @@ const submit = () => {
                         <span v-else>Sign In</span>
                     </button>
                 </div>
-                <div class="mt-8 text-center border-t border-gray-100 pt-6">
+                <div v-if="isCentralDomain" class="mt-8 text-center border-t border-gray-100 pt-6">
                     <p class="text-sm text-gray-500">
                         Don't have an account? 
                         <Link href="/register" class="font-bold text-indigo-600 hover:text-indigo-500 transition-colors">

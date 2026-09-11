@@ -92,7 +92,7 @@ class TenancyServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->bootEvents();
-        $this->mapRoutes();
+        // Route mapping is deferred to bootstrap/app.php after web routes
 
         $this->makeTenancyMiddlewareHighestPriority();
     }

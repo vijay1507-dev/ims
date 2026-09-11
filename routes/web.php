@@ -49,7 +49,7 @@ foreach ($centralDomains as $domain) {
         PreventAccessFromTenantDomains::class,
     ])->group(function () {
         // Platform Dashboard Overview
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
+        Route::get('/', [DashboardController::class, 'index'])->name('central.dashboard');
 
         // Superadmin Client Management
         Route::resource('clients', ClientController::class);

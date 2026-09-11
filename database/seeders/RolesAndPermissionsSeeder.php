@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
+use App\Models\Tenant;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -112,6 +113,11 @@ class RolesAndPermissionsSeeder extends Seeder
         if ($testUser) {
             $testUser->assignRole($adminRole);
         }
+
+        Tenant::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Default Organization']
+        );
 
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
