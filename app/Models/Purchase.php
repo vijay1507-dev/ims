@@ -33,9 +33,16 @@ class Purchase extends Model
         static::creating(function ($purchase) {
             if (empty($purchase->purchase_number)) {
                 $year = date('Y');
-                $latest = static::where('purchase_number', 'like', "PO-{$year}-%")->latest('id')->first();
+                $latest = static::withoutGlobalScopes()->where('purchase_number', 'like', "PO-{$year}-%")->latest('id')->first();
                 $num = $latest ? ((int) substr($latest->purchase_number, -4)) + 1 : 1;
-                $purchase->purchase_number = sprintf('PO-%s-%04d', $year, $num);
+                do {
+                    $numStr = sprintf('PO-%s-%04d', $year, $num);
+                    $exists = static::withoutGlobalScopes()->where('purchase_number', $numStr)->exists();
+                    if ($exists) {
+                        $num++;
+                    }
+                } while ($exists);
+                $purchase->purchase_number = $numStr;
             }
         });
     }

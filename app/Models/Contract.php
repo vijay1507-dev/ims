@@ -41,18 +41,18 @@ class Contract extends Model
 
         static::creating(function ($contract) {
             if (empty($contract->contract_number)) {
-                $lastContract = static::orderBy('id', 'desc')->first();
+                $lastContract = static::withoutGlobalScopes()->withTrashed()->orderBy('id', 'desc')->first();
                 $nextNum = 1;
                 if ($lastContract && preg_match('/CON(\d+)/i', $lastContract->contract_number, $matches)) {
                     $nextNum = ((int)$matches[1]) + 1;
                 } else {
-                    $count = static::withTrashed()->count();
+                    $count = static::withoutGlobalScopes()->withTrashed()->count();
                     $nextNum = $count + 1;
                 }
-                // Loop to make absolutely sure it's unique
+                // Loop to make absolutely sure it's unique across all tenants & soft-deleted records
                 do {
                     $numStr = 'CON' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
-                    $exists = static::where('contract_number', $numStr)->exists();
+                    $exists = static::withoutGlobalScopes()->withTrashed()->where('contract_number', $numStr)->exists();
                     if ($exists) {
                         $nextNum++;
                     }

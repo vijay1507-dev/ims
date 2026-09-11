@@ -85,14 +85,14 @@ class PaymentChannelController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-            return redirect()->route('payment-channels.index')->with('success', 'Payment Channel created successfully.');
+            return redirect()->back()->with('success', 'Payment Channel created successfully.');
         }
 
         $validated['created_by'] = Auth::id();
 
         PaymentChannel::create($validated);
 
-        return redirect()->route('payment-channels.index')->with('success', 'Payment Channel created successfully.');
+        return redirect()->back()->with('success', 'Payment Channel created successfully.');
     }
 
     /**
@@ -127,9 +127,7 @@ class PaymentChannelController extends Controller
 
         $paymentChannel->update($validated);
 
-        $page = $request->input('page', 1);
-
-        return redirect()->route('payment-channels.index', ['page' => $page])->with('success', 'Payment Channel updated successfully.');
+        return redirect()->back()->with('success', 'Payment Channel updated successfully.');
     }
 
     /**
@@ -144,7 +142,7 @@ class PaymentChannelController extends Controller
 
         $paymentChannel->delete();
 
-        return redirect()->route('payment-channels.index')->with('success', 'Payment Channel deleted successfully.');
+        return redirect()->back()->with('success', 'Payment Channel deleted successfully.');
     }
 
     /**

@@ -35,7 +35,7 @@ class BillingCycleController extends Controller
 
         BillingCycle::create($validated);
 
-        return redirect()->route('billing-cycles.index')->with('success', 'Billing cycle created successfully.');
+        return redirect()->back()->with('success', 'Billing cycle created successfully.');
     }
 
     public function update(Request $request, BillingCycle $billingCycle): RedirectResponse
@@ -51,7 +51,7 @@ class BillingCycleController extends Controller
 
         $billingCycle->update($validated);
 
-        return redirect()->route('billing-cycles.index')->with('success', 'Billing cycle updated successfully.');
+        return redirect()->back()->with('success', 'Billing cycle updated successfully.');
     }
 
     public function destroy(BillingCycle $billingCycle): RedirectResponse
@@ -61,12 +61,12 @@ class BillingCycleController extends Controller
         // Check if there are active subscriptions using this cycle
         $usageCount = \DB::table('subscriptions')->where('billing_cycle', $billingCycle->code)->count();
         if ($usageCount > 0) {
-            return redirect()->route('billing-cycles.index')->with('error', 'Cannot delete this billing cycle. It is currently assigned to ' . $usageCount . ' subscriptions.');
+            return redirect()->back()->with('error', 'Cannot delete this billing cycle. It is currently assigned to ' . $usageCount . ' subscriptions.');
         }
 
         $billingCycle->delete();
 
-        return redirect()->route('billing-cycles.index')->with('success', 'Billing cycle deleted successfully.');
+        return redirect()->back()->with('success', 'Billing cycle deleted successfully.');
     }
 
     public function toggleStatus(BillingCycle $billingCycle): RedirectResponse

@@ -54,7 +54,7 @@ class ContractTypeController extends Controller
 
         ContractType::create($validated);
 
-        return redirect()->route('contract-types.index')->with('success', 'Contract Type created successfully.');
+        return redirect()->back()->with('success', 'Contract Type created successfully.');
     }
 
     /**
@@ -72,9 +72,7 @@ class ContractTypeController extends Controller
 
         $contractType->update($validated);
 
-        $page = $request->input('page', 1);
-
-        return redirect()->route('contract-types.index', ['page' => $page])->with('success', 'Contract Type updated successfully.');
+        return redirect()->back()->with('success', 'Contract Type updated successfully.');
     }
 
     /**
@@ -89,7 +87,7 @@ class ContractTypeController extends Controller
 
         $contractType->delete();
 
-        return redirect()->route('contract-types.index')->with('success', 'Contract Type deleted successfully.');
+        return redirect()->back()->with('success', 'Contract Type deleted successfully.');
     }
 
     /**

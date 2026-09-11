@@ -103,7 +103,7 @@ class ContractController extends Controller
 
         Contract::create($validated);
 
-        return redirect()->route('contracts.index')->with('success', 'Contract created successfully.');
+        return redirect()->back()->with('success', 'Contract created successfully.');
     }
 
     /**
@@ -144,9 +144,7 @@ class ContractController extends Controller
 
         $contract->update($validated);
 
-        $page = $request->input('page', 1);
-
-        return redirect()->route('contracts.index', ['page' => $page])->with('success', 'Contract updated successfully.');
+        return redirect()->back()->with('success', 'Contract updated successfully.');
     }
 
     /**
@@ -156,7 +154,7 @@ class ContractController extends Controller
     {
         $contract->delete();
 
-        return redirect()->route('contracts.index')->with('success', 'Contract deleted successfully.');
+        return redirect()->back()->with('success', 'Contract deleted successfully.');
     }
 
     /**
@@ -170,7 +168,7 @@ class ContractController extends Controller
         $newContract->updated_by = null;
         $newContract->save();
 
-        return redirect()->route('contracts.index')->with('success', 'Contract duplicated successfully.');
+        return redirect()->back()->with('success', 'Contract duplicated successfully.');
     }
 
     /**
